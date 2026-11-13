@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* FridgeChef design tokens (RGB triplets so Tailwind can apply opacity).
+   Basil green leads, saffron highlights, tomato warns. Neutrals lean slightly toward the green. */
+:root {
+  --bg: 248 249 246;
+  --surface: 255 255 255;
+  --sunken: 240 243 238;
+  --ink: 24 33 28;
+  --muted: 98 112 104;
+  --line: 223 229 222;
+  --brand: 31 107 74;
+  --brand-deep: 20 77 53;
+  --brand-ink: 255 255 255;
+  --brand-soft: 226 241 232;
+  --saffron: 236 160 46;
+  --saffron-soft: 253 241 216;
+  --tomato: 214 64 58;
+  --tomato-soft: 252 230 228;
+  --fresh: 46 150 90;
+  --fresh-soft: 225 244 232;
+  --shadow: 22 38 30;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: 15 19 17; --surface: 24 30 27; --sunken: 19 24 21; --ink: 233 239 235; --muted: 152 167 158;
+    --line: 45 55 50; --brand: 108 201 146; --brand-deep: 140 220 172; --brand-ink: 10 28 18; --brand-soft: 30 54 41;
+    --saffron: 245 186 92; --saffron-soft: 60 46 22; --tomato: 255 128 118; --tomato-soft: 66 32 30;
+    --fresh: 108 201 146; --fresh-soft: 28 52 38; --shadow: 0 0 0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: 15 19 17; --surface: 24 30 27; --sunken: 19 24 21; --ink: 233 239 235; --muted: 152 167 158;
+  --line: 45 55 50; --brand: 108 201 146; --brand-deep: 140 220 172; --brand-ink: 10 28 18; --brand-soft: 30 54 41;
+  --saffron: 245 186 92; --saffron-soft: 60 46 22; --tomato: 255 128 118; --tomato-soft: 66 32 30;
+  --fresh: 108 201 146; --fresh-soft: 28 52 38; --shadow: 0 0 0;
+  color-scheme: dark;
+}
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    @apply bg-bg text-ink font-sans antialiased;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  h1, h2, h3, h4 { @apply font-display; text-wrap: balance; letter-spacing: -0.015em; }
+  :focus-visible { outline: 2.5px solid rgb(var(--brand)); outline-offset: 2px; border-radius: 6px; }
+  [hidden] { display: none !important; }
+  dialog::backdrop { background: rgb(var(--shadow) / 0.45); backdrop-filter: blur(2px); }
+  input[type="number"]::-webkit-inner-spin-button { opacity: 0.4; }
+}
+
+@layer components {
+  /* One gutter for every page band: clears a phone's side system bars too. */
+  .gutter {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .card { @apply bg-surface rounded-3xl shadow-card border border-line/60; }
+  .label { @apply text-[12px] font-semibold uppercase tracking-[0.08em] text-muted; }
+  .input {
+    @apply w-full rounded-2xl border border-line bg-surface px-4 py-3 text-[16px] text-ink placeholder:text-muted/70
+      transition focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/15;
+  }
+  .num { font-variant-numeric: tabular-nums; }
+  .skeleton {
+    background: linear-gradient(90deg, rgb(var(--sunken)) 0%, rgb(var(--line)) 50%, rgb(var(--sunken)) 100%);
+    background-size: 200% 100%;
+    @apply animate-shimmer rounded-xl;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}

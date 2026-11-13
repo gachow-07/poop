@@ -1,0 +1,458 @@
+<title>Fridge to Table</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: one plain column, three numbered steps, then the plan. Big type, big buttons, nothing extra. */
+:root {
+  --bg: #FFFFFF;
+  --box: #F2F4F1;
+  --ink: #1D2420;
+  --muted: #5A645E;
+  --line: #CDD4CF;
+  --green: #276A3C;
+  --green-ink: #FFFFFF;
+  --green-soft: #E3F0E6;
+  --yellow: #FFF3C4;
+  --font: "Atkinson Hyperlegible", Verdana, "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161A18; --box: #212724; --ink: #EEF2EF; --muted: #A9B4AD; --line: #3A443F;
+    --green: #7FCB94; --green-ink: #10200F; --green-soft: #22382A; --yellow: #3D3518; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161A18; --box: #212724; --ink: #EEF2EF; --muted: #A9B4AD; --line: #3A443F;
+  --green: #7FCB94; --green-ink: #10200F; --green-soft: #22382A; --yellow: #3D3518; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 19px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px;
+}
+.page { max-width: 660px; margin: 0 auto; display: flex; flex-direction: column; gap: 36px; }
+h1 { font-size: 34px; line-height: 1.15; margin: 0 0 6px; }
+h2 { font-size: 25px; line-height: 1.2; margin: 0 0 14px; }
+h3 { font-size: 22px; margin: 0; }
+p { margin: 0; }
+.sub { color: var(--muted); }
+.step-no { color: var(--green); }
+
+input[type=text], textarea {
+  font: inherit; font-size: 19px; color: var(--ink); background: var(--bg);
+  border: 2px solid var(--line); border-radius: 8px; padding: 12px 14px; width: 100%;
+}
+textarea { min-height: 90px; resize: vertical; }
+button { font: inherit; font-size: 19px; cursor: pointer; border-radius: 8px; min-height: 52px; padding: 10px 18px; border: 2px solid var(--line); background: var(--bg); color: var(--ink); }
+button:hover { border-color: var(--muted); }
+button:disabled { opacity: .45; cursor: default; }
+button.big { background: var(--green); border-color: var(--green); color: var(--green-ink); font-weight: 700; }
+button.huge { width: 100%; font-size: 22px; min-height: 64px; }
+button.link { border: 0; background: none; color: var(--green); text-decoration: underline; padding: 6px 0; min-height: 0; }
+:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+
+.add { display: flex; gap: 10px; }
+.add input { flex: 1; min-width: 0; }
+@media (max-width: 460px) { .add { flex-direction: column; } }
+.help { color: var(--muted); font-size: 17px; margin-top: 8px; }
+
+.note { background: var(--yellow); border-radius: 8px; padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; justify-content: space-between; }
+
+ul.food { list-style: none; margin: 16px 0 0; padding: 0; border-top: 1px solid var(--line); }
+ul.food li { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+ul.food .name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+ul.food label { display: flex; align-items: center; gap: 8px; font-size: 16px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+ul.food li.soon .name { font-weight: 700; }
+ul.food button { min-height: 44px; padding: 6px 12px; font-size: 16px; }
+.nothing { color: var(--muted); padding: 14px 0; }
+input[type=checkbox] { width: 24px; height: 24px; accent-color: var(--green); margin: 0; flex: none; }
+
+.choices { display: grid; gap: 22px; }
+.q { display: grid; gap: 10px; }
+.q > .label { font-weight: 700; }
+.stepper { display: inline-flex; align-items: center; gap: 14px; }
+.stepper button { width: 56px; padding: 0; font-size: 26px; line-height: 1; }
+.stepper output { min-width: 96px; text-align: center; font-size: 21px; font-weight: 700; }
+.checks { display: flex; flex-wrap: wrap; gap: 10px 22px; }
+.checks label, label.line { display: flex; align-items: center; gap: 10px; cursor: pointer; min-height: 44px; }
+
+/* Plan */
+.plan { display: grid; gap: 28px; }
+.plan-top { display: grid; gap: 10px; }
+.tag { font-size: 16px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.day { border-top: 3px solid var(--ink); padding-top: 12px; display: grid; gap: 4px; }
+.meal { padding: 14px 0; border-bottom: 1px solid var(--line); display: grid; gap: 4px; }
+.meal:last-child { border-bottom: 0; }
+.meal .when { font-size: 16px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: .05em; }
+.meal .dish { font-size: 22px; font-weight: 700; }
+.meal .mins { font-weight: 400; color: var(--muted); font-size: 17px; white-space: nowrap; }
+.meal .uses { color: var(--muted); font-size: 17px; }
+.meal .buy { font-size: 17px; }
+.meal .buy b { color: var(--ink); }
+details summary { cursor: pointer; color: var(--green); text-decoration: underline; font-size: 17px; padding: 6px 0; width: fit-content; }
+details ol { margin: 6px 0 4px; padding-left: 24px; display: grid; gap: 6px; }
+
+.box { background: var(--box); border-radius: 10px; padding: 18px 20px; }
+.box ul { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 6px; }
+.box li label { display: flex; gap: 12px; align-items: center; cursor: pointer; min-height: 40px; }
+.box li input:checked + span { text-decoration: line-through; color: var(--muted); }
+.box p + p { margin-top: 8px; }
+
+.waiting { background: var(--box); border-radius: 10px; padding: 24px; display: grid; gap: 14px; justify-items: start; }
+.waiting b { font-size: 22px; }
+.problem { background: var(--yellow); border-radius: 8px; padding: 12px 16px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+
+<div class="page">
+  <header>
+    <h1>What's for dinner?</h1>
+    <p class="sub">Tell me what's in your fridge and I'll plan your meals for the next few days.</p>
+  </header>
+
+  <!-- STEP 1 -->
+  <section aria-labelledby="s1">
+    <h2 id="s1"><span class="step-no">1.</span> What's in your fridge?</h2>
+    <form class="add" id="add-form" autocomplete="off">
+      <label class="sr" for="add-input">Type a food</label>
+      <input type="text" id="add-input" placeholder="Type a food, like eggs">
+      <button type="submit" class="big">Add</button>
+    </form>
+    <p class="help">You can add several at once with commas: <i>milk, carrots, chicken</i></p>
+    <p class="help" id="photo-row" hidden>
+      <input type="file" id="photo-input" accept="image/*" capture="environment" class="sr">
+      Or <button type="button" class="link" id="photo-btn">take a picture of your fridge</button> instead.
+      <span id="photo-status" role="status"></span>
+    </p>
+    <div class="note" id="example-note" hidden style="margin-top:16px">
+      <span>These are just examples.</span>
+      <button type="button" class="link" id="clear-btn">Clear the list</button>
+    </div>
+    <ul class="food" id="food"></ul>
+    <p class="help">Tick <b>Use soon</b> on anything that's about to go bad.</p>
+  </section>
+
+  <!-- STEP 2 -->
+  <section aria-labelledby="s2">
+    <h2 id="s2"><span class="step-no">2.</span> A few questions</h2>
+    <div class="choices">
+      <div class="q">
+        <span class="label" id="days-l">How many days?</span>
+        <div class="stepper" role="group" aria-labelledby="days-l">
+          <button type="button" id="days-minus" aria-label="Fewer days">−</button>
+          <output id="days-out">3 days</output>
+          <button type="button" id="days-plus" aria-label="More days">+</button>
+        </div>
+      </div>
+      <div class="q">
+        <span class="label" id="ppl-l">How many people are eating?</span>
+        <div class="stepper" role="group" aria-labelledby="ppl-l">
+          <button type="button" id="ppl-minus" aria-label="Fewer people">−</button>
+          <output id="ppl-out">2 people</output>
+          <button type="button" id="ppl-plus" aria-label="More people">+</button>
+        </div>
+      </div>
+      <div class="q">
+        <span class="label">Which meals?</span>
+        <div class="checks">
+          <label><input type="checkbox" id="m-breakfast"> Breakfast</label>
+          <label><input type="checkbox" id="m-lunch" checked> Lunch</label>
+          <label><input type="checkbox" id="m-dinner" checked> Dinner</label>
+        </div>
+      </div>
+      <div class="q">
+        <label class="line"><input type="checkbox" id="basics" checked> I have the basics (salt, pepper, oil, rice, pasta)</label>
+        <label class="line"><input type="checkbox" id="extras" checked> I don't mind buying a few things</label>
+      </div>
+      <div class="q">
+        <label class="label" for="notes">Anything I should know? <span class="sub" style="font-weight:400">(optional)</span></label>
+        <textarea id="notes" placeholder="For example: no fish, keep it quick, Dad is vegetarian"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section aria-labelledby="s3">
+    <h2 id="s3" class="sr">Make the plan</h2>
+    <button type="button" class="big huge" id="go-btn">Plan my meals</button>
+    <p class="help" id="go-hint" style="text-align:center"></p>
+  </section>
+
+  <section class="plan" id="plan" aria-live="polite"></section>
+</div>
+
+<script>
+(() => {
+  const BASICS = ["salt", "pepper", "oil", "rice", "pasta"];
+  const EXAMPLE = [
+    { name: "eggs" }, { name: "spinach", soon: true }, { name: "chicken thighs" }, { name: "cheddar cheese" },
+    { name: "bell peppers" }, { name: "yogurt" }, { name: "tortillas" }, { name: "broccoli" }, { name: "milk" },
+  ];
+
+  // Built-in recipes, used when Claude isn't available on this page.
+  // needs: every group must be present ("a|b" = either). opt: nice-to-haves.
+  const RECIPES = [
+    { n: "Scrambled eggs with vegetables", t: ["breakfast"], needs: ["egg"], opt: ["spinach","pepper","onion","tomato","mushroom","cheese"], m: 10, veg: 1, s: ["Chop the vegetables and cook them in a little oil for 3–4 minutes.","Beat the eggs with a pinch of salt and pepper and pour them in.","Stir gently on low heat until just set. Add cheese if you have it."] },
+    { n: "Yogurt with fruit", t: ["breakfast"], needs: ["yogurt|yoghurt"], opt: ["berr","banana","apple","granola","honey","oat"], m: 5, veg: 1, s: ["Spoon yogurt into bowls.","Top with sliced fruit.","Add honey or granola if you like."] },
+    { n: "French toast", t: ["breakfast"], needs: ["egg","bread","milk"], opt: ["berr","banana","butter"], m: 15, veg: 1, s: ["Beat eggs and milk together with a pinch of salt.","Dip each slice of bread in the mix.","Fry in butter or oil until golden, 2–3 minutes a side."] },
+    { n: "Oatmeal with fruit", t: ["breakfast"], needs: ["oat","milk"], opt: ["banana","berr","apple","honey"], m: 10, veg: 1, s: ["Simmer oats in milk for 5 minutes, stirring.","Top with sliced fruit.","Add honey if you like."] },
+    { n: "Cheese quesadillas", t: ["lunch","dinner"], needs: ["tortilla","cheese|cheddar|mozzarella"], opt: ["chicken","bean","pepper","onion","spinach","corn"], m: 15, veg: 1, s: ["Sprinkle cheese and any fillings over half a tortilla, then fold it.","Cook in a dry pan on medium heat, 2–3 minutes a side, until crisp.","Cut into wedges."] },
+    { n: "Big salad", t: ["lunch"], needs: ["lettuce|spinach|greens|kale"], opt: ["cucumber","tomato","carrot","pepper","cheese","chicken","egg","avocado"], m: 10, veg: 1, s: ["Wash and chop the greens and vegetables.","Mix 3 spoons of oil with 1 spoon of vinegar or lemon, plus salt and pepper.","Toss everything together and add any meat or eggs on top."] },
+    { n: "Grilled cheese sandwich", t: ["lunch"], needs: ["bread","cheese|cheddar|mozzarella"], opt: ["tomato","butter","ham"], m: 10, veg: 1, s: ["Butter the outside of two slices of bread.","Put cheese (and tomato) in the middle.","Cook on medium-low heat until golden on both sides."] },
+    { n: "Egg fried rice", t: ["lunch","dinner"], needs: ["rice","egg"], opt: ["pea","carrot","onion","chicken","pepper","broccoli"], m: 20, veg: 1, s: ["Use cooked rice, cold if you have it.","Fry chopped vegetables in oil for 3 minutes.","Push them aside, scramble the eggs, then add rice and soy sauce and stir until hot."] },
+    { n: "Chicken wraps", t: ["lunch"], needs: ["tortilla","chicken|turkey|ham"], opt: ["lettuce","spinach","tomato","cheese","avocado","pepper"], m: 15, veg: 0, s: ["Cook or warm the chicken and slice it thin.","Warm the tortillas.","Fill with chicken and salad, then roll up."] },
+    { n: "Chicken stir-fry", t: ["dinner"], needs: ["chicken"], opt: ["pepper","broccoli","carrot","onion","mushroom","rice"], m: 25, veg: 0, s: ["Cut the chicken into strips and season with salt and pepper.","Fry in a hot pan with oil until cooked through, then set aside.","Fry the vegetables for 5 minutes, add the chicken back with a splash of soy sauce. Serve with rice."] },
+    { n: "Oven-baked chicken and vegetables", t: ["dinner"], needs: ["chicken","potato|carrot|broccoli|pepper|onion"], opt: ["lemon","garlic"], m: 40, veg: 0, s: ["Heat the oven to 425°F (220°C).","Put chicken and chopped vegetables on a tray, drizzle with oil, salt and pepper.","Bake 30–35 minutes until the chicken is cooked through."] },
+    { n: "Pasta with tomato sauce", t: ["lunch","dinner"], needs: ["pasta","tomato"], opt: ["onion","garlic","spinach","mushroom","beef","cheese"], m: 25, veg: 1, s: ["Boil the pasta in salted water.","Cook onion in oil, add tomatoes and simmer for 10 minutes.","Mix the sauce with the pasta. Add cheese on top."] },
+    { n: "Beef tacos", t: ["dinner"], needs: ["beef|ground","tortilla"], opt: ["cheese","lettuce","tomato","onion","avocado","sour cream"], m: 25, veg: 0, s: ["Brown the beef with onion and taco spices, about 10 minutes.","Warm the tortillas.","Fill with beef and toppings."] },
+    { n: "Baked salmon and vegetables", t: ["dinner"], needs: ["salmon|fish"], opt: ["broccoli","asparagus","potato","lemon","green bean"], m: 25, veg: 0, s: ["Heat the oven to 400°F (200°C). Roast chopped vegetables in oil for 10 minutes.","Add the fish to the tray with salt, pepper and lemon.","Bake 10–12 minutes more."] },
+    { n: "Egg and cheese bake (frittata)", t: ["dinner","lunch"], needs: ["egg"], opt: ["potato","spinach","cheese","onion","pepper","broccoli","ham"], m: 30, veg: 1, s: ["Soften the vegetables in an oven-safe pan.","Pour in 6–8 beaten eggs and add cheese. Cook on the stove until the edges set.","Finish under the broiler for 3–5 minutes until golden."] },
+    { n: "Pork chops with apples", t: ["dinner"], needs: ["pork"], opt: ["apple","onion","potato","green bean"], m: 30, veg: 0, s: ["Season the chops and fry 4–5 minutes a side. Set aside.","In the same pan, cook sliced onion and apple for 6 minutes.","Serve the chops with the apples."] },
+    { n: "Baked potatoes", t: ["lunch","dinner"], needs: ["potato"], opt: ["cheese","broccoli","sour cream","yogurt","bacon","bean"], m: 45, veg: 1, s: ["Poke holes in the potatoes and bake at 400°F (200°C) for 45 minutes, or microwave 8–10 minutes.","Split them open with butter and salt.","Add your toppings."] },
+    { n: "Rice bowl with vegetables", t: ["lunch","dinner"], needs: ["rice"], opt: ["broccoli","pepper","carrot","spinach","egg","tofu","chicken","avocado"], m: 20, veg: 1, s: ["Warm the rice.","Cook the vegetables in a pan with oil.","Put everything in bowls with a fried egg or chicken on top."] },
+  ];
+
+  // ---------- state ----------
+  const LS = "fridge-to-table:v2";
+  let items = [], example = true, days = 3, people = 2;
+  try { const s = JSON.parse(localStorage.getItem(LS) || "null"); if (s && Array.isArray(s.items)) { items = s.items; example = false; days = s.days || 3; people = s.people || 2; } } catch {}
+  if (example) items = EXAMPLE.map((x) => ({ ...x, soon: !!x.soon }));
+  const save = () => { try { localStorage.setItem(LS, JSON.stringify({ items, days, people })); } catch {} };
+
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, props = {}, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(props)) { if (k === "class") e.className = v; else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else if (v !== false && v != null) e.setAttribute(k, v === true ? "" : v); } for (const k of kids.flat()) if (k != null && k !== false) e.append(k.nodeType ? k : String(k)); return e; };
+  const norm = (s) => String(s).toLowerCase().trim();
+  const listJoin = (a) => a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
+
+  // ---------- fridge list ----------
+  function renderFood() {
+    const ul = $("food"); ul.textContent = "";
+    $("example-note").hidden = !example;
+    if (!items.length) ul.append(el("li", { class: "nothing" }, "Nothing yet. Type a food above and press Add."));
+    items.forEach((it, i) => {
+      const id = "soon-" + i;
+      ul.append(el("li", { class: it.soon ? "soon" : "" },
+        el("span", { class: "name" }, it.name),
+        el("label", { for: id }, el("input", { type: "checkbox", id, checked: it.soon, onchange: (e) => { it.soon = e.target.checked; changed(); } }), "Use soon"),
+        el("button", { type: "button", "aria-label": "Remove " + it.name, onclick: () => { items.splice(i, 1); changed(); } }, "Remove")));
+    });
+    updateGo();
+  }
+  function changed() { example = false; save(); renderFood(); }
+  function addItems(list) {
+    if (example) { items = []; example = false; }
+    for (const name of list) { const n = name.trim().replace(/\s+/g, " "); if (n && !items.some((i) => norm(i.name) === norm(n))) items.push({ name: n, soon: false }); }
+    save(); renderFood();
+  }
+  $("add-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const parts = $("add-input").value.split(/[,;\n]+/).filter((s) => s.trim());
+    if (!parts.length) { $("add-input").focus(); return; }
+    addItems(parts); $("add-input").value = ""; $("add-input").focus();
+  });
+  $("clear-btn").addEventListener("click", () => { items = []; example = false; save(); renderFood(); $("add-input").focus(); });
+
+  // ---------- questions ----------
+  function renderSteppers() {
+    $("days-out").textContent = days + (days === 1 ? " day" : " days");
+    $("ppl-out").textContent = people + (people === 1 ? " person" : " people");
+    $("days-minus").disabled = days <= 1; $("days-plus").disabled = days >= 7;
+    $("ppl-minus").disabled = people <= 1; $("ppl-plus").disabled = people >= 10;
+  }
+  const bump = (fn) => () => { fn(); save(); renderSteppers(); updateGo(); };
+  $("days-minus").addEventListener("click", bump(() => days = Math.max(1, days - 1)));
+  $("days-plus").addEventListener("click", bump(() => days = Math.min(7, days + 1)));
+  $("ppl-minus").addEventListener("click", bump(() => people = Math.max(1, people - 1)));
+  $("ppl-plus").addEventListener("click", bump(() => people = Math.min(10, people + 1)));
+  for (const id of ["m-breakfast", "m-lunch", "m-dinner"]) $(id).addEventListener("change", updateGo);
+
+  function prefs() {
+    return { days, people, meals: ["breakfast", "lunch", "dinner"].filter((m) => $("m-" + m).checked), basics: $("basics").checked, extras: $("extras").checked, notes: $("notes").value.trim() };
+  }
+  let busy = false;
+  function updateGo() {
+    const p = prefs();
+    $("go-hint").textContent = !items.length ? "Add some food to your list first." : !p.meals.length ? "Pick at least one meal." : "";
+    $("go-btn").disabled = busy || !items.length || !p.meals.length;
+  }
+
+  // ---------- built-in planner ----------
+  function localPlan(p) {
+    const names = items.map((it) => ({ it, n: norm(it.name) }));
+    const basics = p.basics ? BASICS.join(" ") : "";
+    const notes = norm(p.notes);
+    const vegOnly = /vegetarian|vegan|no meat/.test(notes);
+    const quick = /quick|fast|easy/.test(notes);
+    const hasAlt = (a) => names.find((x) => x.n.includes(a)) || (basics.includes(a) ? { basic: true } : null);
+    const findGroup = (g) => { for (const a of g.split("|")) { const h = hasAlt(a); if (h) return h; } return null; };
+    const usedCount = new Map(), usedRecipes = new Map(), out = [];
+    for (let d = 0; d < p.days; d++) {
+      const meals = [];
+      for (const type of p.meals) {
+        let best = null;
+        for (const r of RECIPES) {
+          if (!r.t.includes(type) || (vegOnly && !r.veg) || (quick && r.m > 30)) continue;
+          const uses = new Set(), extra = []; let missing = 0;
+          for (const g of r.needs) { const h = findGroup(g); if (!h) { missing++; extra.push(g.split("|")[0]); } else if (h.it) uses.add(h.it); }
+          if (missing > (p.extras ? 1 : 0)) continue;
+          for (const o of r.opt) { const h = hasAlt(o); if (h && h.it) uses.add(h.it); }
+          let score = uses.size * 2 - missing * 3 - (uses.size ? 0 : 10);
+          for (const u of uses) { if (u.soon) score += d < 2 ? 4 : 1; score -= (usedCount.get(u) || 0) * 0.6; }
+          score -= (usedRecipes.get(r.n) || 0) * 8;
+          if (!best || score > best.score) best = { r, uses: [...uses], extra, score };
+        }
+        if (!best) continue;
+        usedRecipes.set(best.r.n, (usedRecipes.get(best.r.n) || 0) + 1);
+        for (const u of best.uses) usedCount.set(u, (usedCount.get(u) || 0) + 1);
+        meals.push({ type: type[0].toUpperCase() + type.slice(1), name: best.r.n, minutes: best.r.m, uses: best.uses.map((u) => u.name), extra: best.extra.map((s) => ({ egg: "eggs", tortilla: "tortillas", oat: "oats" }[s] || s)), steps: best.r.s });
+      }
+      out.push({ day: "Day " + (d + 1), meals });
+    }
+    const unused = items.filter((i) => !usedCount.has(i)).map((i) => i.name);
+    return { days: out, shopping: [...new Set(out.flatMap((d) => d.meals.flatMap((m) => m.extra)))], tips: unused.length ? [`Not used in this plan: ${listJoin(unused)}.`] : [], source: "local" };
+  }
+
+  // ---------- Claude planner ----------
+  let sample = null, ctl = null, timer = null;
+  function buildPrompt(p) {
+    const list = items.map((i) => `- ${i.name}${i.soon ? "  [USE SOON]" : ""}`).join("\n");
+    return `You are planning simple, everyday home-cooked meals from what is already in someone's fridge. The cook is not an expert, so keep dishes familiar and instructions plain.
+
+FRIDGE:
+${list}
+
+PANTRY: ${p.basics ? "salt, pepper, cooking oil, rice, pasta" : "only salt, pepper and cooking oil"}
+
+- Days: ${p.days}
+- Meals each day: ${p.meals.join(", ")}
+- People eating: ${p.people}
+- Buying extra ingredients: ${p.extras ? "allowed, but keep the shopping list short (at most 6 items)" : "NOT allowed; use only the fridge and pantry, and leave 'extra' empty"}
+${p.notes ? `- Notes from the cook: ${p.notes}` : ""}
+
+RULES:
+- Build meals mainly from the fridge. Use [USE SOON] items in the first day or two.
+- Be realistic about amounts; leftovers from one meal can become another.
+- Don't repeat the same dish.
+- "uses": fridge items exactly as written above. Don't list pantry items.
+- "extra": things to buy for that meal.
+- 3 to 5 short steps per meal in plain words, with oven temperatures in °F and °C.
+
+Reply with ONLY a JSON object of this shape:
+{"days": [{"day": "Day 1", "meals": [{"type": "Dinner", "name": "Dish name", "minutes": 25, "uses": ["eggs"], "extra": [], "steps": ["..."]}]}],
+ "shopping": ["combined shopping list"],
+ "tips": ["1 or 2 short, practical tips"]}`;
+  }
+  function clean(o) {
+    const arr = (x) => Array.isArray(x) ? x.map(String).filter(Boolean) : [];
+    const ds = (Array.isArray(o?.days) ? o.days : []).map((d, i) => ({
+      day: String(d?.day || "Day " + (i + 1)),
+      meals: (Array.isArray(d?.meals) ? d.meals : []).map((m) => ({ type: String(m?.type || "Meal"), name: String(m?.name || "Meal"), minutes: Number(m?.minutes) || null, uses: arr(m?.uses), extra: arr(m?.extra), steps: arr(m?.steps) })),
+    })).filter((d) => d.meals.length);
+    if (!ds.length) throw { code: "invalid_json" };
+    return { days: ds, shopping: arr(o.shopping), tips: arr(o.tips), source: "claude" };
+  }
+
+  // ---------- show plan ----------
+  function showWaiting() {
+    const root = $("plan"); root.textContent = "";
+    const started = Date.now();
+    const secs = el("span", {}, "");
+    root.append(el("div", { class: "waiting" },
+      el("b", {}, "Planning your meals…"),
+      el("p", {}, "This usually takes under a minute. ", secs),
+      el("button", { type: "button", onclick: () => ctl?.abort() }, "Cancel")));
+    clearInterval(timer);
+    timer = setInterval(() => { const s = Math.round((Date.now() - started) / 1000); secs.textContent = s >= 5 ? `(${s} seconds so far)` : ""; }, 1000);
+  }
+
+  let lastPlan = null;
+  function showPlan(plan, { isExample = false, problem = "" } = {}) {
+    lastPlan = plan; clearInterval(timer);
+    const root = $("plan"); root.textContent = "";
+    root.append(el("div", { class: "plan-top" },
+      isExample ? el("span", { class: "tag" }, "Example") : null,
+      el("h2", { style: "margin:0" }, isExample ? "Here's what a plan looks like" : "Your meal plan"),
+      problem ? el("p", { class: "problem" }, problem) : null,
+      isExample ? null : el("div", {}, el("button", { type: "button", id: "copy-btn", onclick: copyPlan }, "Copy the plan"))));
+    for (const d of plan.days) {
+      root.append(el("div", { class: "day" }, el("h3", {}, d.day),
+        d.meals.map((m) => el("div", { class: "meal" },
+          el("span", { class: "when" }, m.type),
+          el("span", { class: "dish" }, m.name, m.minutes ? el("span", { class: "mins" }, ` · ${m.minutes} min`) : null),
+          m.uses.length ? el("span", { class: "uses" }, "Uses your " + listJoin(m.uses)) : null,
+          m.extra.length ? el("span", { class: "buy" }, el("b", {}, "Buy: "), listJoin(m.extra)) : null,
+          m.steps.length ? el("details", {}, el("summary", {}, "Show how to make it"), el("ol", {}, m.steps.map((s) => el("li", {}, s)))) : null))));
+    }
+    if (plan.shopping.length) root.append(el("div", { class: "box" }, el("h3", {}, "Shopping list"),
+      el("ul", {}, plan.shopping.map((s, i) => el("li", {}, el("label", {}, el("input", { type: "checkbox", id: "shop-" + i }), el("span", {}, s)))))));
+    if (plan.tips.length) root.append(el("div", { class: "box" }, el("h3", { style: "margin-bottom:8px" }, "Good to know"), plan.tips.map((t) => el("p", {}, t))));
+  }
+
+  async function copyPlan() {
+    if (!lastPlan) return;
+    const lines = [];
+    for (const d of lastPlan.days) { lines.push(d.day.toUpperCase()); for (const m of d.meals) { lines.push(`${m.type}: ${m.name}${m.minutes ? ` (${m.minutes} min)` : ""}`); m.steps.forEach((s, i) => lines.push(`  ${i + 1}. ${s}`)); } lines.push(""); }
+    if (lastPlan.shopping.length) { lines.push("SHOPPING LIST"); lastPlan.shopping.forEach((s) => lines.push("- " + s)); }
+    const txt = lines.join("\n"), b = $("copy-btn");
+    try { await navigator.clipboard.writeText(txt); b.textContent = "Copied! Paste it into a text or email."; }
+    catch { const ta = el("textarea", { readonly: true, style: "min-height:220px;margin-top:10px" }); ta.value = txt; b.after(ta); ta.select(); b.textContent = "Copy the text below"; }
+  }
+
+  const PERMANENT = ["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"];
+  $("go-btn").addEventListener("click", async () => {
+    const p = prefs();
+    if (!items.length || !p.meals.length) return;
+    busy = true; updateGo();
+    try {
+      if (sample) {
+        showWaiting();
+        $("plan").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+        try {
+          ctl = new AbortController();
+          showPlan(clean(await sample.json(buildPrompt(p), { signal: ctl.signal, cache: false })));
+        } catch (e) {
+          if (PERMANENT.includes(e?.code)) { sample = null; setPhoto(); }
+          const msg = e?.code === "cancelled" ? "Cancelled. Here's a simpler plan from our recipe list instead."
+            : e?.code === "rate_limited" ? "The planner is busy right now. Here's a simpler plan from our recipe list. Try again in a little while."
+            : "Something went wrong. Here's a simpler plan from our recipe list. You can press Plan my meals to try again.";
+          showPlan(localPlan(p), { problem: msg });
+        }
+      } else {
+        showPlan(localPlan(p));
+        $("plan").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+      }
+    } finally { busy = false; clearInterval(timer); updateGo(); }
+  });
+
+  // ---------- photo ----------
+  function setPhoto(lim) { $("photo-row").hidden = !(sample && lim?.images); if (lim?.images) $("photo-input").accept = lim.images.mediaTypes.join(","); }
+  $("photo-btn").addEventListener("click", () => $("photo-input").click());
+  $("photo-input").addEventListener("change", async (e) => {
+    const f = e.target.files?.[0]; e.target.value = "";
+    if (!f || !sample) return;
+    const st = $("photo-status"), b = $("photo-btn");
+    b.disabled = true; st.textContent = " Looking at your picture…";
+    try {
+      const found = await sample.json('This is a photo of the inside of a fridge or of groceries. List each food you can identify. Reply with ONLY a JSON array of short plain grocery names, like ["eggs", "spinach", "cheddar cheese"]. Skip bottles you cannot read.', { images: f, cache: false });
+      const list = (Array.isArray(found) ? found : []).map((x) => typeof x === "string" ? x : x?.name).filter(Boolean).map(String);
+      addItems(list);
+      st.textContent = list.length ? ` Added ${list.length} foods. Remove anything that's wrong.` : " I couldn't see any food in that picture.";
+    } catch (err) {
+      st.textContent = " I couldn't read that picture. Try another one, or type the foods in.";
+      if (PERMANENT.includes(err?.code)) { sample = null; setPhoto(); }
+    } finally { b.disabled = false; }
+  });
+
+  // ---------- start ----------
+  renderFood(); renderSteppers();
+  if (example) showPlan(localPlan({ ...prefs(), days: 1 }), { isExample: true });
+  if (window.claude?.use) {
+    window.claude.use("sample").then(async (s) => { if (!s) return; sample = s; setPhoto(await s.limits().catch(() => null)); }).catch(() => {});
+  }
+})();
+</script>
