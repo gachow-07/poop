@@ -1,0 +1,625 @@
+<title>Fridge to Table</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: a fridge door on the left (shelves of what you have), the week's plate on the right. Stacks on phones. */
+:root {
+  --bg: #EAF1EE;          /* cool appliance enamel */
+  --panel: #FFFFFF;
+  --panel-2: #F4F8F6;
+  --ink: #14302A;
+  --muted: #587069;
+  --line: #D0DDD8;
+  --accent: #D9481F;      /* tomato */
+  --accent-ink: #FFFFFF;
+  --leaf: #2C7452;        /* from-your-fridge */
+  --leaf-bg: #E1F0E7;
+  --soon: #A86F00;        /* use first */
+  --soon-bg: #FBEFD3;
+  --shadow: 0 1px 2px rgba(20,48,42,.06), 0 8px 24px rgba(20,48,42,.06);
+  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1916; --panel: #15231F; --panel-2: #1A2B26; --ink: #E3EEEA; --muted: #93A9A1;
+    --line: #293D36; --accent: #FF7650; --accent-ink: #1A0A04; --leaf: #74CFA0; --leaf-bg: #1C3A2D;
+    --soon: #F2B84B; --soon-bg: #3A2E14; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1916; --panel: #15231F; --panel-2: #1A2B26; --ink: #E3EEEA; --muted: #93A9A1;
+  --line: #293D36; --accent: #FF7650; --accent-ink: #1A0A04; --leaf: #74CFA0; --leaf-bg: #1C3A2D;
+  --soon: #F2B84B; --soon-bg: #3A2E14; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 56px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 24px; }
+header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; }
+h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(30px, 5vw, 46px); line-height: 1; letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+h1 em { font-style: normal; color: var(--accent); }
+.lede { margin: 8px 0 0; color: var(--muted); max-width: 52ch; }
+.status-pill { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding: 6px 10px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.status-pill b { color: var(--leaf); font-weight: 600; }
+
+.grid { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 880px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Fridge door */
+.fridge { background: var(--panel); border: 1px solid var(--line); border-radius: 22px 22px 14px 14px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+.fridge-head { padding: 18px 26px 14px 20px; border-bottom: 1px solid var(--line); display: grid; gap: 12px; }
+.fridge-head h2, .plan h2 { font-family: var(--f-display); font-size: 20px; font-weight: 700; margin: 0; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.add { display: flex; gap: 8px; }
+.add input { flex: 1; min-width: 0; }
+input[type=text], select, textarea {
+  font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; width: 100%;
+}
+textarea { resize: vertical; min-height: 60px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, summary:focus-visible, label.chk:focus-within {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+button { font: inherit; cursor: pointer; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); color: var(--ink); padding: 9px 13px; font-weight: 600; }
+button:hover { border-color: var(--muted); }
+button:disabled { opacity: .5; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button.primary:hover { filter: brightness(1.05); }
+button.ghost { background: transparent; border-color: transparent; color: var(--muted); padding: 6px 8px; font-weight: 500; }
+button.ghost:hover { color: var(--ink); }
+.hint { font-size: 12.5px; color: var(--muted); margin: 0; }
+.hint kbd { font-family: var(--f-mono); font-size: 11.5px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+
+.shelves { padding: 6px 26px 8px 20px; }
+.shelf { padding: 12px 0 14px; border-bottom: 2px solid var(--line); }
+.shelf:last-child { border-bottom: 0; }
+.shelf-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); margin: 0 0 8px; display: flex; justify-content: space-between; }
+.shelf-label span:last-child { font-family: var(--f-mono); letter-spacing: 0; }
+.items { display: flex; flex-wrap: wrap; gap: 6px; }
+.item { display: inline-flex; align-items: center; gap: 6px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 4px 4px 4px 9px; font-size: 14px; max-width: 100%; }
+.item .nm { overflow-wrap: anywhere; }
+.item .qty { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.item.soon { background: var(--soon-bg); border-color: color-mix(in srgb, var(--soon) 45%, transparent); }
+.item button { padding: 2px 6px; border: 0; background: transparent; font-weight: 600; font-size: 12px; color: var(--muted); border-radius: 6px; }
+.item button:hover { color: var(--ink); background: var(--line); }
+.item.soon .soon-btn { color: var(--soon); }
+.empty-shelf { font-size: 13px; color: var(--muted); font-style: italic; }
+.example-note { margin: 12px 20px 0; padding: 8px 12px; border-radius: 10px; background: var(--soon-bg); color: var(--ink); font-size: 13px; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.staples { padding: 14px 20px 18px; border-top: 1px solid var(--line); background: var(--panel-2); }
+.staples .items { margin-top: 8px; }
+.tog { font-size: 13px; padding: 5px 10px; border-radius: 999px; font-weight: 500; background: var(--panel); }
+.tog[aria-pressed="true"] { background: var(--leaf-bg); border-color: color-mix(in srgb, var(--leaf) 50%, transparent); color: var(--leaf); }
+
+/* Preferences */
+.prefs { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; display: grid; gap: 14px; margin-top: 16px; box-shadow: var(--shadow); }
+.prefs-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.field { display: grid; gap: 5px; min-width: 0; }
+.field > span, fieldset legend { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+fieldset legend { padding: 0; margin-bottom: 6px; }
+label.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel-2); cursor: pointer; }
+label.chk input { accent-color: var(--accent); margin: 0; }
+.go { display: grid; gap: 8px; }
+.go .row button.primary { flex: 1; padding: 13px 16px; font-size: 16px; }
+
+/* Plan */
+.plan { display: grid; gap: 18px; min-width: 0; }
+.plan-head { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: 12px; }
+.badge { display: inline-block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; padding: 3px 8px; border-radius: 6px; background: var(--leaf-bg); color: var(--leaf); }
+.badge.sample { background: var(--soon-bg); color: var(--soon); }
+.summary { margin: 8px 0 0; max-width: 62ch; }
+.stats { display: flex; gap: 10px; flex-wrap: wrap; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; min-width: 110px; }
+.stat b { display: block; font-family: var(--f-mono); font-size: 20px; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; color: var(--muted); }
+.meter { height: 6px; border-radius: 6px; background: var(--line); overflow: hidden; margin-top: 6px; }
+.meter i { display: block; height: 100%; background: var(--leaf); }
+
+.day { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+.day-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 12px 18px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
+.day-h h3 { margin: 0; font-family: var(--f-display); font-size: 18px; font-weight: 700; }
+.day-h span { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.meal { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 4px 14px; padding: 14px 18px; border-top: 1px solid var(--line); }
+.meal:first-of-type { border-top: 0; }
+@media (max-width: 520px) { .meal { grid-template-columns: minmax(0, 1fr); } }
+.meal-type { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .09em; color: var(--accent); padding-top: 4px; }
+.meal-name { font-family: var(--f-display); font-size: 18px; font-weight: 700; margin: 0; line-height: 1.25; }
+.meal-name small { font-family: var(--f-mono); font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 8px; white-space: nowrap; }
+.meal .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.chip { font-size: 12.5px; padding: 2px 8px; border-radius: 6px; background: var(--leaf-bg); color: var(--leaf); font-weight: 500; }
+.chip.extra { background: transparent; border: 1px dashed var(--muted); color: var(--muted); }
+details.steps { margin-top: 8px; }
+details.steps summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted); list-style: none; display: inline-flex; gap: 6px; align-items: center; border-radius: 6px; }
+details.steps summary::-webkit-details-marker { display: none; }
+details.steps summary::before { content: "+"; font-family: var(--f-mono); }
+details.steps[open] summary::before { content: "–"; }
+details.steps ol { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 4px; max-width: 64ch; }
+
+.side-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 620px) { .side-cards { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+.card h4 { margin: 0 0 10px; font-family: var(--f-display); font-size: 16px; }
+.card ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.card li label { display: flex; gap: 8px; align-items: start; cursor: pointer; }
+.card li input { accent-color: var(--leaf); margin-top: 4px; }
+.card li input:checked + span { text-decoration: line-through; color: var(--muted); }
+.card .muted { color: var(--muted); font-size: 13.5px; margin: 0; }
+
+.working { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; display: grid; gap: 12px; }
+.working p { margin: 0; }
+.dots { display: inline-flex; gap: 5px; }
+.dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: bob 1s infinite ease-in-out; }
+.dots i:nth-child(2) { animation-delay: .15s; } .dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes bob { 0%,100% { transform: translateY(0); opacity: .5 } 50% { transform: translateY(-5px); opacity: 1 } }
+@media (prefers-reduced-motion: reduce) { .dots i { animation: none; } }
+.err { background: var(--soon-bg); border-radius: 10px; padding: 10px 14px; font-size: 14px; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Fridge to <em>Table</em></h1>
+      <p class="lede">List what's in your fridge, flag anything that needs eating soon, and get a meal plan built around it.</p>
+    </div>
+    <span class="status-pill" id="engine-pill">Recipe matcher</span>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT: fridge + prefs -->
+    <div>
+      <section class="fridge" aria-labelledby="fridge-h">
+        <div class="fridge-head">
+          <div class="row" style="justify-content:space-between">
+            <h2 id="fridge-h">What's in your fridge</h2>
+            <span class="mono hint" id="count">0 items</span>
+          </div>
+          <form class="add" id="add-form" autocomplete="off">
+            <label class="sr" for="add-input">Add food</label>
+            <input type="text" id="add-input" placeholder="e.g. 6 eggs, spinach, 2 chicken thighs">
+            <button type="submit" class="primary">Add</button>
+          </form>
+          <p class="hint">Separate items with commas. Tap <b>Use first</b> on anything about to go off.</p>
+          <div class="row" id="photo-row" hidden>
+            <input type="file" id="photo-input" accept="image/*" capture="environment" class="sr">
+            <button type="button" id="photo-btn">Scan a fridge photo</button>
+            <span class="hint" id="photo-status"></span>
+          </div>
+        </div>
+        <div class="example-note" id="example-note" hidden>
+          <span>These are example items.</span>
+          <button type="button" class="ghost" id="clear-btn">Clear and start my own</button>
+        </div>
+        <div class="shelves" id="shelves"></div>
+        <div class="staples">
+          <p class="shelf-label" style="margin:0"><span>Pantry staples you have</span></p>
+          <div class="items" id="staples"></div>
+        </div>
+      </section>
+
+      <section class="prefs" aria-label="Plan settings">
+        <div class="prefs-grid">
+          <label class="field"><span>Days</span>
+            <select id="days"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+          </label>
+          <label class="field"><span>Servings</span>
+            <select id="servings"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>6</option></select>
+          </label>
+          <label class="field"><span>Diet</span>
+            <select id="diet"><option value="none">No restrictions</option><option value="vegetarian">Vegetarian</option><option value="vegan">Vegan</option><option value="pescatarian">Pescatarian</option><option value="gluten-free">Gluten-free</option><option value="dairy-free">Dairy-free</option></select>
+          </label>
+          <label class="field"><span>Max cook time</span>
+            <select id="maxmin"><option value="15">15 min</option><option value="30">30 min</option><option value="45" selected>45 min</option><option value="90">Any</option></select>
+          </label>
+        </div>
+        <fieldset>
+          <legend>Meals each day</legend>
+          <div class="row">
+            <label class="chk"><input type="checkbox" id="m-breakfast" checked> Breakfast</label>
+            <label class="chk"><input type="checkbox" id="m-lunch" checked> Lunch</label>
+            <label class="chk"><input type="checkbox" id="m-dinner" checked> Dinner</label>
+          </div>
+        </fieldset>
+        <label class="chk" style="justify-self:start"><input type="checkbox" id="extras" checked> OK to buy a few extra ingredients</label>
+        <label class="field"><span>Anything else?</span>
+          <textarea id="notes" placeholder="e.g. no mushrooms, likes spicy food, packed lunches for work"></textarea>
+        </label>
+        <div class="go">
+          <div class="row">
+            <button type="button" class="primary" id="go-btn">Make my meal plan</button>
+          </div>
+          <p class="hint" id="go-hint"></p>
+        </div>
+      </section>
+    </div>
+
+    <!-- RIGHT: plan -->
+    <main class="plan" id="plan" aria-live="polite"></main>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ---------- data ----------
+  const SHELVES = [
+    { key: "produce", label: "Crisper drawer", words: ["spinach","lettuce","kale","greens","arugula","cabbage","tomato","cucumber","pepper","onion","garlic","carrot","celery","broccoli","cauliflower","zucchini","squash","mushroom","potato","sweet potato","avocado","lemon","lime","apple","banana","berr","grape","orange","pear","peach","mango","herb","cilantro","parsley","basil","scallion","green onion","corn","pea","bean sprout","asparagus","green bean","eggplant","ginger","jalape","fruit","veg","melon","kiwi","radish","beet","leek"] },
+    { key: "dairy", label: "Dairy & eggs", words: ["egg","milk","cheese","cheddar","mozzarella","parmesan","feta","yogurt","yoghurt","butter","cream","sour cream","cottage","ricotta","half and half"] },
+    { key: "protein", label: "Meat, fish & tofu", words: ["chicken","beef","steak","pork","bacon","ham","sausage","turkey","lamb","salmon","tuna","fish","cod","shrimp","prawn","tofu","tempeh","mince","ground","chorizo","salami","deli"] },
+    { key: "other", label: "Shelves & door", words: [] },
+  ];
+  const STAPLES = ["Salt & pepper","Olive oil","Garlic","Rice","Pasta","Flour","Soy sauce","Spices","Canned tomatoes","Beans (canned)","Bread","Oats"];
+  const DEFAULT_STAPLES = ["Salt & pepper","Olive oil","Rice","Pasta","Spices"];
+  const EXAMPLE = [
+    { name: "eggs", qty: "6" }, { name: "baby spinach", qty: "1 bag", soon: true }, { name: "chicken thighs", qty: "4" },
+    { name: "cheddar", qty: "200g" }, { name: "bell peppers", qty: "2" }, { name: "Greek yogurt", qty: "" },
+    { name: "tortillas", qty: "8" }, { name: "broccoli", qty: "1 head" }, { name: "milk", qty: "" }, { name: "leftover rice", qty: "", soon: true },
+  ];
+
+  // Built-in recipes, used when Claude isn't available in this view.
+  // needs: every group must be present ("a|b" = either). opt: nice-to-haves.
+  const RECIPES = [
+    { n: "Veggie egg scramble", t: ["breakfast"], needs: ["egg"], opt: ["spinach","pepper","onion","tomato","mushroom","cheese","cheddar"], m: 10, d: ["vegetarian","gluten-free","pescatarian"], s: ["Chop whatever vegetables you're using and soften them in a little oil, 3–4 min.","Whisk the eggs with salt and pepper and pour into the pan.","Stir gently on low heat until just set; fold in cheese if you have it."] },
+    { n: "Yogurt bowl with fruit", t: ["breakfast"], needs: ["yogurt|yoghurt"], opt: ["berr","banana","apple","granola","honey","oat","nut"], m: 5, d: ["vegetarian","gluten-free","pescatarian"], s: ["Spoon yogurt into bowls.","Top with sliced fruit and anything crunchy you have.","Drizzle with honey if you like."] },
+    { n: "French toast", t: ["breakfast"], needs: ["egg","bread","milk"], opt: ["berr","banana","cinnamon","butter"], m: 15, d: ["vegetarian","pescatarian"], s: ["Whisk eggs and milk with a pinch of salt (and cinnamon).","Soak bread slices for 20 seconds a side.","Fry in butter or oil until golden, 2–3 min a side."] },
+    { n: "Overnight oats", t: ["breakfast"], needs: ["oat","milk|yogurt"], opt: ["banana","berr","apple","honey"], m: 5, d: ["vegetarian","pescatarian"], s: ["Stir oats with an equal amount of milk or yogurt.","Add chopped fruit, cover and chill overnight.","Loosen with a splash of milk in the morning."] },
+    { n: "Avocado toast with egg", t: ["breakfast","lunch"], needs: ["bread","avocado"], opt: ["egg","tomato","lemon","lime"], m: 10, d: ["vegetarian","pescatarian"], s: ["Toast the bread.","Mash avocado with salt, pepper and a squeeze of citrus.","Spread on toast and top with a fried or boiled egg."] },
+    { n: "Cheese quesadillas", t: ["lunch","dinner"], needs: ["tortilla","cheese|cheddar|mozzarella"], opt: ["chicken","bean","pepper","onion","spinach","corn"], m: 15, d: ["vegetarian","pescatarian"], s: ["Scatter cheese and any fillings over half a tortilla; fold.","Cook in a dry pan over medium heat, 2–3 min a side, until crisp and melted.","Cut into wedges; serve with yogurt or salsa."] },
+    { n: "Big chopped salad", t: ["lunch"], needs: ["lettuce|spinach|greens|kale|arugula"], opt: ["cucumber","tomato","carrot","pepper","cheese","feta","chicken","egg","avocado","bean"], m: 10, d: ["vegetarian","vegan","gluten-free","pescatarian","dairy-free"], s: ["Wash and chop the greens and vegetables.","Whisk 3 parts oil to 1 part vinegar or lemon with salt and pepper.","Toss together and top with any protein you have."] },
+    { n: "Grilled cheese and tomato", t: ["lunch"], needs: ["bread","cheese|cheddar|mozzarella"], opt: ["tomato","butter","spinach","ham"], m: 10, d: ["vegetarian","pescatarian"], s: ["Butter the outsides of the bread.","Fill with cheese and sliced tomato.","Cook over medium-low heat until golden on both sides and melted inside."] },
+    { n: "Egg fried rice", t: ["lunch","dinner"], needs: ["rice","egg"], opt: ["pea","carrot","onion","scallion","green onion","chicken","pork","shrimp","pepper","broccoli","soy"], m: 20, d: ["vegetarian","dairy-free","pescatarian"], s: ["Use cold, cooked rice if you have it.","Stir-fry chopped vegetables in a hot pan with oil, 3 min.","Push aside, scramble the eggs, then add rice and soy sauce and fry until hot."] },
+    { n: "Chicken wraps", t: ["lunch"], needs: ["tortilla","chicken|turkey|ham"], opt: ["lettuce","spinach","tomato","cheese","avocado","yogurt","pepper"], m: 15, d: ["dairy-free"], s: ["Cook or warm the meat and slice it thin.","Warm the tortillas.","Fill with meat, greens and a spoon of yogurt or sauce; roll tight."] },
+    { n: "Chicken and veg stir-fry", t: ["dinner"], needs: ["chicken"], opt: ["pepper","broccoli","carrot","onion","mushroom","snap pea","zucchini","garlic","ginger","soy","rice"], m: 25, d: ["dairy-free"], s: ["Slice chicken into strips and season.","Sear in a very hot pan with oil until cooked through; set aside.","Stir-fry the vegetables 4–5 min, return the chicken, add soy sauce and garlic. Serve over rice."] },
+    { n: "Sheet-pan chicken and vegetables", t: ["dinner"], needs: ["chicken","potato|carrot|broccoli|pepper|onion|zucchini|cauliflower"], opt: ["lemon","garlic","herb"], m: 40, d: ["gluten-free","dairy-free"], s: ["Heat oven to 220°C / 425°F.","Toss chicken and chopped vegetables in oil, salt, pepper and spices on one tray.","Roast 30–35 min until the chicken is cooked through and the edges are browned."] },
+    { n: "Tomato pasta", t: ["lunch","dinner"], needs: ["pasta","tomato"], opt: ["onion","garlic","spinach","mushroom","beef","sausage","parmesan","cheese","basil","pepper"], m: 25, d: ["vegetarian","vegan","pescatarian","dairy-free"], s: ["Boil the pasta in salted water.","Soften onion and garlic in oil, add tomatoes and simmer 10 min; stir in greens at the end.","Toss with pasta and a splash of pasta water; top with cheese if you have it."] },
+    { n: "Beef tacos", t: ["dinner"], needs: ["beef|mince|ground","tortilla"], opt: ["cheese","lettuce","tomato","onion","avocado","sour cream","lime","pepper"], m: 25, d: ["dairy-free"], s: ["Brown the beef with onion and spices, 8–10 min.","Warm the tortillas.","Fill with beef and toppings."] },
+    { n: "Salmon with roasted vegetables", t: ["dinner"], needs: ["salmon|fish|cod"], opt: ["broccoli","asparagus","potato","lemon","green bean","zucchini"], m: 25, d: ["pescatarian","gluten-free","dairy-free"], s: ["Heat oven to 200°C / 400°F; roast chopped vegetables in oil for 10 min.","Add the seasoned fish to the tray.","Roast 10–12 min more; finish with lemon."] },
+    { n: "Spinach and cheese frittata", t: ["dinner","lunch"], needs: ["egg"], opt: ["potato","spinach","cheese","cheddar","feta","onion","pepper","broccoli","ham"], m: 30, d: ["vegetarian","gluten-free","pescatarian"], s: ["Soften the vegetables in an ovenproof pan.","Pour over 6–8 beaten eggs, add cheese, cook on the stove until the edges set.","Finish under the grill 3–5 min until puffed and golden."] },
+    { n: "Tofu and vegetable curry", t: ["dinner"], needs: ["tofu"], opt: ["coconut","pepper","spinach","onion","carrot","broccoli","curry","rice","garlic","ginger"], m: 30, d: ["vegetarian","vegan","gluten-free","pescatarian","dairy-free"], s: ["Fry cubed tofu until golden; set aside.","Cook onion, garlic and spices, add vegetables and coconut milk or tomatoes, simmer 12 min.","Return tofu, stir in greens, serve with rice."] },
+    { n: "Bean chili", t: ["dinner"], needs: ["bean"], opt: ["onion","pepper","tomato","beef","corn","cheese","sour cream","avocado"], m: 40, d: ["vegetarian","vegan","gluten-free","pescatarian","dairy-free"], s: ["Soften onion and peppers with chili, cumin and garlic.","Add beans and tomatoes and simmer 25 min.","Serve with toppings, rice or bread."] },
+    { n: "Garlic shrimp pasta", t: ["dinner"], needs: ["shrimp|prawn","pasta"], opt: ["garlic","lemon","spinach","tomato","parsley","butter"], m: 20, d: ["pescatarian","dairy-free"], s: ["Boil the pasta.","Sauté garlic in oil, add shrimp and cook 2–3 min until pink.","Toss with pasta, lemon and greens."] },
+    { n: "Pork chops with apples", t: ["dinner"], needs: ["pork"], opt: ["apple","onion","potato","green bean","butter"], m: 30, d: ["gluten-free"], s: ["Season the chops and sear 4–5 min a side; rest.","In the same pan soften sliced onion and apple, 6 min.","Serve the chops with the apples and any vegetables."] },
+    { n: "Loaded baked potatoes", t: ["lunch","dinner"], needs: ["potato"], opt: ["cheese","cheddar","broccoli","sour cream","yogurt","bacon","bean","scallion"], m: 45, d: ["vegetarian","gluten-free","pescatarian"], s: ["Prick potatoes and bake at 200°C / 400°F for 45 min (or microwave 8–10 min).","Split open and fluff the insides with butter and salt.","Load with toppings."] },
+    { n: "Veggie rice bowl", t: ["lunch","dinner"], needs: ["rice"], opt: ["broccoli","pepper","carrot","spinach","egg","tofu","chicken","avocado","cucumber","soy"], m: 20, d: ["vegetarian","vegan","gluten-free","pescatarian","dairy-free"], s: ["Warm the rice.","Roast or stir-fry the vegetables.","Pile into bowls, add a protein and a soy or yogurt dressing."] },
+  ];
+  const MEATS = ["chicken","beef","pork","bacon","ham","sausage","turkey","lamb","mince","ground","chorizo","salami","steak"];
+  const FISH = ["salmon","tuna","fish","cod","shrimp","prawn"];
+  const ANIMAL = ["egg","milk","cheese","cheddar","mozzarella","parmesan","feta","yogurt","yoghurt","butter","cream","honey"];
+  const GLUTEN = ["bread","pasta","tortilla","flour","oat"];
+  const DAIRY = ["milk","cheese","cheddar","mozzarella","parmesan","feta","yogurt","yoghurt","butter","cream","sour cream"];
+
+  // ---------- state ----------
+  const LS = "fridge-to-table:v1";
+  let state = { items: [], staples: [...DEFAULT_STAPLES], example: true };
+  try { const s = JSON.parse(localStorage.getItem(LS) || "null"); if (s && Array.isArray(s.items)) state = { staples: [...DEFAULT_STAPLES], ...s, example: false }; } catch {}
+  if (state.example) state.items = EXAMPLE.map((x, i) => ({ id: "ex" + i, ...x, soon: !!x.soon }));
+  const save = () => { try { localStorage.setItem(LS, JSON.stringify({ items: state.items, staples: state.staples })); } catch {} };
+
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, props = {}, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(props)) { if (k === "class") e.className = v; else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else if (v !== false && v != null) e.setAttribute(k, v === true ? "" : v); } for (const k of kids.flat()) if (k != null && k !== false) e.append(k.nodeType ? k : String(k)); return e; };
+  const norm = (s) => String(s).toLowerCase();
+  const uid = () => Math.random().toString(36).slice(2, 9);
+
+  function shelfOf(name) {
+    const n = norm(name);
+    // protein & dairy before produce so "chicken" or "egg" never fall into produce via partial words
+    for (const key of ["protein", "dairy", "produce"]) { const sh = SHELVES.find((s) => s.key === key); if (sh.words.some((w) => n.includes(w))) return key; }
+    return "other";
+  }
+  const QTY_RE = /^((?:\d+[\d\/.,]*|a|an|one|two|half)\s*(?:g|kg|oz|lb|lbs|ml|l|cups?|tbsp|tsp|cans?|bags?|packs?|packets?|bunch(?:es)?|heads?|cloves?|slices?|blocks?|tubs?|jars?|bottles?|cartons?|dozen|x)?\.?)\s+(?:of\s+)?(.+)$/i;
+  function parseEntry(raw) {
+    const t = raw.trim().replace(/\s+/g, " ");
+    if (!t) return null;
+    const m = t.match(QTY_RE);
+    if (m && /\d/.test(m[1])) return { name: m[2], qty: m[1] };
+    return { name: t, qty: "" };
+  }
+
+  // ---------- render fridge ----------
+  function renderFridge() {
+    const box = $("shelves"); box.textContent = "";
+    $("count").textContent = state.items.length + (state.items.length === 1 ? " item" : " items");
+    $("example-note").hidden = !state.example;
+    for (const sh of SHELVES) {
+      const its = state.items.filter((i) => shelfOf(i.name) === sh.key);
+      const wrap = el("div", { class: "shelf" }, el("p", { class: "shelf-label" }, el("span", {}, sh.label), el("span", {}, its.length || "")));
+      const list = el("div", { class: "items" });
+      if (!its.length) list.append(el("span", { class: "empty-shelf" }, "Empty"));
+      for (const it of its) {
+        list.append(el("span", { class: "item" + (it.soon ? " soon" : "") },
+          it.qty ? el("span", { class: "qty" }, it.qty) : null,
+          el("span", { class: "nm" }, it.name),
+          el("button", { type: "button", class: "soon-btn", "aria-pressed": it.soon ? "true" : "false", title: "Mark as needing to be used soon", onclick: () => { it.soon = !it.soon; touch(); } }, it.soon ? "Use first ✓" : "Use first"),
+          el("button", { type: "button", "aria-label": "Remove " + it.name, onclick: () => { state.items = state.items.filter((x) => x !== it); touch(); } }, "✕")));
+      }
+      wrap.append(list); box.append(wrap);
+    }
+    const st = $("staples"); st.textContent = "";
+    for (const s of STAPLES) {
+      const on = state.staples.includes(s);
+      st.append(el("button", { type: "button", class: "tog", "aria-pressed": on ? "true" : "false", onclick: () => { state.staples = on ? state.staples.filter((x) => x !== s) : [...state.staples, s]; touch(); } }, s));
+    }
+    updateGoHint();
+  }
+  function touch() { if (state.example) { state.example = false; } save(); renderFridge(); }
+  function addItems(list) {
+    if (state.example) { state.items = []; state.example = false; }
+    for (const p of list) if (p && p.name && !state.items.some((i) => norm(i.name) === norm(p.name))) state.items.push({ id: uid(), name: p.name, qty: p.qty || "", soon: !!p.soon });
+    save(); renderFridge();
+  }
+
+  $("add-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const v = $("add-input").value;
+    const parts = v.split(/[,;\n]+/).map(parseEntry).filter(Boolean);
+    if (!parts.length) return;
+    addItems(parts);
+    $("add-input").value = ""; $("add-input").focus();
+  });
+  $("clear-btn").addEventListener("click", () => { state.items = []; state.example = false; save(); renderFridge(); $("add-input").focus(); });
+
+  // ---------- prefs ----------
+  function prefs() {
+    return {
+      days: +$("days").value, servings: +$("servings").value, diet: $("diet").value, maxmin: +$("maxmin").value,
+      meals: ["breakfast", "lunch", "dinner"].filter((m) => $("m-" + m).checked),
+      extras: $("extras").checked, notes: $("notes").value.trim(),
+    };
+  }
+  function updateGoHint() {
+    const p = prefs();
+    const n = p.days * p.meals.length;
+    $("go-hint").textContent = !state.items.length ? "Add a few things from your fridge first." : !p.meals.length ? "Pick at least one meal per day." : `${n} meal${n === 1 ? "" : "s"} for ${p.servings} ${p.servings === 1 ? "person" : "people"}, built from ${state.items.length} item${state.items.length === 1 ? "" : "s"}.`;
+    $("go-btn").disabled = !state.items.length || !p.meals.length || busy;
+  }
+  for (const id of ["days", "servings", "diet", "maxmin", "m-breakfast", "m-lunch", "m-dinner", "extras"]) $(id).addEventListener("change", updateGoHint);
+
+  // ---------- local planner ----------
+  function localPlan(p) {
+    const names = state.items.map((i) => ({ it: i, n: norm(i.name) }));
+    const staples = state.staples.map(norm).join(" ");
+    const hasAlt = (alt) => names.find((x) => x.n.includes(alt)) || (staples.includes(alt) ? { staple: true } : null);
+    const findGroup = (g) => { for (const alt of g.split("|")) { const h = hasAlt(alt); if (h) return h; } return null; };
+    const dietOk = (r) => {
+      if (p.diet === "none") return true;
+      if (r.d.includes(p.diet)) return true;
+      return false;
+    };
+    const usedCount = new Map(); const usedRecipes = new Map();
+    const days = [];
+    for (let d = 0; d < p.days; d++) {
+      const meals = [];
+      for (const type of p.meals) {
+        let best = null;
+        for (const r of RECIPES) {
+          if (!r.t.includes(type) || !dietOk(r) || r.m > p.maxmin) continue;
+          const uses = new Set(); const extra = []; let missing = 0;
+          for (const g of r.needs) { const h = findGroup(g); if (!h) { missing++; extra.push(g.split("|")[0]); } else if (h.it) uses.add(h.it); }
+          if (missing > (p.extras ? 1 : 0)) continue;
+          for (const o of r.opt) { const h = hasAlt(o); if (h && h.it) uses.add(h.it); }
+          let score = uses.size * 2 - missing * 3 - (uses.size ? 0 : 10);
+          for (const u of uses) { if (u.soon) score += d < 2 ? 4 : 1; score -= (usedCount.get(u) || 0) * 0.6; }
+          score -= (usedRecipes.get(r.n) || 0) * 8;
+          if (!best || score > best.score) best = { r, uses: [...uses], extra, score };
+        }
+        if (!best) continue;
+        usedRecipes.set(best.r.n, (usedRecipes.get(best.r.n) || 0) + 1);
+        for (const u of best.uses) usedCount.set(u, (usedCount.get(u) || 0) + 1);
+        meals.push({ type: cap(type), name: best.r.n, minutes: best.r.m, uses: best.uses.map((u) => u.name), extra: best.extra.map(prettyExtra), steps: best.r.s });
+      }
+      days.push({ day: "Day " + (d + 1), meals });
+    }
+    const shopping = [...new Set(days.flatMap((d) => d.meals.flatMap((m) => m.extra)))];
+    const unused = state.items.filter((i) => !usedCount.has(i)).map((i) => i.name);
+    const tips = [];
+    const soonUsed = state.items.filter((i) => i.soon && usedCount.has(i));
+    if (soonUsed.length) tips.push(`${listJoin(soonUsed.map((i) => i.name))} ${soonUsed.length === 1 ? "is" : "are"} scheduled early so ${soonUsed.length === 1 ? "it doesn't" : "they don't"} go to waste.`);
+    if (unused.length) tips.push(`Not used: ${listJoin(unused)}. Snack on them, or add them to a salad or scramble.`);
+    return { summary: "Matched against a small built-in recipe list. Open this page inside Claude for a plan written around your exact ingredients.", days, shopping, unused, tips, source: "local" };
+  }
+  const cap = (s) => s[0].toUpperCase() + s.slice(1);
+  const prettyExtra = (s) => ({ egg: "eggs", tortilla: "tortillas", bean: "beans", oat: "oats", "yogurt": "yogurt" }[s] || s);
+  const listJoin = (a) => a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
+
+  // ---------- Claude planner ----------
+  let sample = null, busy = false, ctl = null, timer = null;
+  function buildPrompt(p) {
+    const items = state.items.map((i) => `- ${i.qty ? i.qty + " " : ""}${i.name}${i.soon ? "  [USE SOON]" : ""}`).join("\n");
+    return `You are a practical home cook planning meals from what is already in someone's fridge.
+
+FRIDGE:
+${items}
+
+PANTRY STAPLES ON HAND: ${state.staples.length ? state.staples.join(", ") : "none listed (assume only salt, pepper and cooking oil)"}
+
+SETTINGS:
+- Days: ${p.days}
+- Meals each day: ${p.meals.join(", ")}
+- Servings per meal: ${p.servings}
+- Diet: ${p.diet === "none" ? "no restrictions" : p.diet}
+- Max active cook time per meal: ${p.maxmin >= 90 ? "no limit" : p.maxmin + " minutes"}
+- Buying extra ingredients: ${p.extras ? "allowed, but keep the shopping list short (at most 6 items) and cheap" : "NOT allowed: use only fridge items and pantry staples; 'extra' must be empty"}
+${p.notes ? `- Notes from the cook: ${p.notes}` : ""}
+
+RULES:
+- Build meals mainly from the fridge items. Use [USE SOON] items in the first day or two.
+- Respect realistic quantities: don't use 6 eggs in every meal if there are only 6. Leftovers from one meal may become another.
+- Vary the meals; avoid repeating the same dish.
+- In "uses", list fridge items exactly as the cook wrote them (names only, no quantities). Do not list pantry staples there.
+- "extra" holds ingredients the cook must buy for that meal (not in the fridge or pantry).
+- 3 to 6 short, concrete steps per meal.
+
+Reply with ONLY a JSON object of this shape:
+{"summary": "one or two friendly sentences about the plan",
+ "days": [{"day": "Day 1", "meals": [{"type": "Breakfast", "name": "Dish name", "minutes": 15, "uses": ["eggs"], "extra": [], "steps": ["..."]}]}],
+ "shopping": ["combined shopping list"],
+ "unused": ["fridge items the plan doesn't use"],
+ "tips": ["1-3 short tips: prep-ahead, storage, or how to use leftovers"]}`;
+  }
+
+  async function claudePlan(p) {
+    const startedAt = Date.now();
+    renderWorking("Claude is reading your fridge…", startedAt);
+    ctl = new AbortController();
+    const out = await sample.json(buildPrompt(p), {
+      signal: ctl.signal, cache: false,
+      onText: ({ text }) => { const n = (text.match(/"name"\s*:/g) || []).length; setWorkingMsg(n ? `Writing your plan… ${n} meal${n === 1 ? "" : "s"} so far` : "Writing your plan…"); },
+    });
+    return clean(out);
+  }
+  function clean(o) {
+    const arr = (x) => Array.isArray(x) ? x.map((s) => String(s)).filter(Boolean) : [];
+    const days = (Array.isArray(o?.days) ? o.days : []).map((d, i) => ({
+      day: String(d?.day || "Day " + (i + 1)),
+      meals: (Array.isArray(d?.meals) ? d.meals : []).map((m) => ({ type: String(m?.type || "Meal"), name: String(m?.name || "Untitled meal"), minutes: Number(m?.minutes) || null, uses: arr(m?.uses), extra: arr(m?.extra), steps: arr(m?.steps) })),
+    })).filter((d) => d.meals.length);
+    if (!days.length) throw { code: "invalid_json", message: "no days" };
+    return { summary: String(o.summary || ""), days, shopping: arr(o.shopping), unused: arr(o.unused), tips: arr(o.tips), source: "claude" };
+  }
+
+  // ---------- render plan ----------
+  function renderWorking(msg, startedAt) {
+    const plan = $("plan"); plan.textContent = "";
+    plan.append(el("div", { class: "working" },
+      el("div", { class: "row" }, el("span", { class: "dots", "aria-hidden": "true" }, el("i"), el("i"), el("i")), el("b", { id: "work-msg" }, msg)),
+      el("p", { class: "hint" }, "Plans usually take 20–60 seconds. ", el("span", { class: "mono", id: "work-time" }, "0s")),
+      el("div", {}, el("button", { type: "button", onclick: () => ctl?.abort() }, "Stop"))));
+    clearInterval(timer);
+    timer = setInterval(() => { const t = $("work-time"); if (t) t.textContent = Math.round((Date.now() - startedAt) / 1000) + "s"; }, 1000);
+  }
+  function setWorkingMsg(m) { const w = $("work-msg"); if (w) w.textContent = m; }
+
+  let lastPlan = null;
+  function renderPlan(plan, { sampleMode = false, note = "" } = {}) {
+    lastPlan = plan;
+    clearInterval(timer);
+    const root = $("plan"); root.textContent = "";
+    const meals = plan.days.flatMap((d) => d.meals);
+    const usedSet = new Set(meals.flatMap((m) => m.uses.map(norm)));
+    const fridgeUsed = state.items.filter((i) => usedSet.has(norm(i.name)) || [...usedSet].some((u) => u.includes(norm(i.name)) || norm(i.name).includes(u))).length;
+    const total = state.items.length || 1;
+    const avgMin = meals.filter((m) => m.minutes).reduce((a, m, _, all) => a + m.minutes / all.length, 0);
+
+    root.append(el("div", { class: "plan-head" },
+      el("div", {},
+        el("span", { class: "badge" + (sampleMode ? " sample" : "") }, sampleMode ? "Sample plan · example fridge" : plan.source === "claude" ? "Planned by Claude" : "Quick plan · built-in recipes"),
+        el("h2", { style: "margin-top:8px;font-size:26px" }, `${plan.days.length}-day meal plan`),
+        plan.summary ? el("p", { class: "summary" }, plan.summary) : null,
+        note ? el("p", { class: "err", style: "margin-top:10px" }, note) : null),
+      el("div", { class: "row" },
+        el("button", { type: "button", onclick: copyPlan, id: "copy-btn" }, "Copy plan"))));
+
+    root.append(el("div", { class: "stats" },
+      el("div", { class: "stat" }, el("b", {}, `${fridgeUsed}/${state.items.length}`), el("span", {}, "fridge items used"), el("div", { class: "meter" }, el("i", { style: `width:${Math.round((fridgeUsed / total) * 100)}%` }))),
+      el("div", { class: "stat" }, el("b", {}, meals.length), el("span", {}, "meals")),
+      el("div", { class: "stat" }, el("b", {}, avgMin ? Math.round(avgMin) + " min" : "–"), el("span", {}, "average cook time")),
+      el("div", { class: "stat" }, el("b", {}, plan.shopping.length), el("span", {}, "things to buy"))));
+
+    for (const d of plan.days) {
+      const mins = d.meals.reduce((a, m) => a + (m.minutes || 0), 0);
+      const card = el("section", { class: "day" }, el("div", { class: "day-h" }, el("h3", {}, d.day), el("span", {}, mins ? `${mins} min cooking` : "")));
+      for (const m of d.meals) {
+        card.append(el("article", { class: "meal" },
+          el("div", { class: "meal-type" }, m.type),
+          el("div", {},
+            el("h4", { class: "meal-name" }, m.name, m.minutes ? el("small", {}, m.minutes + " min") : null),
+            (m.uses.length || m.extra.length) ? el("div", { class: "chips" }, m.uses.map((u) => el("span", { class: "chip", title: "From your fridge" }, u)), m.extra.map((u) => el("span", { class: "chip extra", title: "To buy" }, "+ " + u))) : null,
+            m.steps.length ? el("details", { class: "steps" }, el("summary", {}, `How to make it (${m.steps.length} steps)`), el("ol", {}, m.steps.map((s) => el("li", {}, s)))) : null)));
+      }
+      root.append(card);
+    }
+
+    root.append(el("div", { class: "side-cards" },
+      el("div", { class: "card" }, el("h4", {}, "Shopping list"),
+        plan.shopping.length ? el("ul", {}, plan.shopping.map((s, i) => el("li", {}, el("label", {}, el("input", { type: "checkbox", id: "shop-" + i }), el("span", {}, s))))) : el("p", { class: "muted" }, "Nothing to buy. Everything comes from your fridge and pantry.")),
+      el("div", { class: "card" }, el("h4", {}, "Tips"),
+        (plan.tips.length || plan.unused.length) ? el("ul", {}, plan.tips.map((t) => el("li", {}, t)), plan.source === "claude" && plan.unused.length ? el("li", { class: "muted" }, "Not used: " + listJoin(plan.unused)) : null) : el("p", { class: "muted" }, "Every item in your fridge has a job."))));
+  }
+
+  async function copyPlan() {
+    if (!lastPlan) return;
+    const lines = [];
+    for (const d of lastPlan.days) { lines.push(d.day.toUpperCase()); for (const m of d.meals) { lines.push(`  ${m.type}: ${m.name}${m.minutes ? ` (${m.minutes} min)` : ""}`); m.steps.forEach((s, i) => lines.push(`     ${i + 1}. ${s}`)); } lines.push(""); }
+    if (lastPlan.shopping.length) { lines.push("SHOPPING"); lastPlan.shopping.forEach((s) => lines.push("  - " + s)); }
+    const txt = lines.join("\n"); const b = $("copy-btn");
+    try { await navigator.clipboard.writeText(txt); b.textContent = "Copied"; }
+    catch { const ta = el("textarea", { readonly: true, style: "width:100%;min-height:200px;margin-top:8px" }); ta.value = txt; b.after(ta); ta.select(); b.textContent = "Select and copy below"; }
+    setTimeout(() => { if (b.isConnected) b.textContent = "Copy plan"; }, 2500);
+  }
+
+  const ERR = {
+    not_granted: "Claude wasn't allowed to run here, so this plan uses the built-in recipes.",
+    sampling_disabled: "Claude isn't available on this account, so this plan uses the built-in recipes.",
+    rate_limited: "You've hit a usage limit for now. Here's a plan from the built-in recipes; try Claude again in a little while.",
+    invalid_json: "Claude's answer came back garbled. Press the button to try again. Meanwhile, here's a quick plan.",
+    refused: "Claude couldn't plan with that input. Try changing your notes. Meanwhile, here's a quick plan.",
+    session_expired: "Your Claude session expired. Sign in again to use Claude; here's a quick plan for now.",
+  };
+  const PERMANENT = ["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"];
+
+  $("go-btn").addEventListener("click", async () => {
+    const p = prefs();
+    if (!state.items.length || !p.meals.length) return;
+    busy = true; updateGoHint();
+    try {
+      if (sample) {
+        try { renderPlan(await claudePlan(p)); }
+        catch (e) {
+          if (e?.code === "cancelled") { renderPlan(lastPlan || localPlan(p), { note: lastPlan ? "Stopped. Showing your previous plan." : "Stopped. Here's a quick plan from the built-in recipes." }); }
+          else {
+            if (PERMANENT.includes(e?.code)) { sample = null; setPill(); }
+            renderPlan(localPlan(p), { note: ERR[e?.code] || "Something went wrong reaching Claude. Press the button to try again. Meanwhile, here's a quick plan." });
+          }
+        }
+      } else renderPlan(localPlan(p));
+    } finally { busy = false; clearInterval(timer); updateGoHint(); }
+    if (window.innerWidth <= 880) $("plan").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  });
+
+  // ---------- photo scan ----------
+  $("photo-btn").addEventListener("click", () => $("photo-input").click());
+  $("photo-input").addEventListener("change", async (e) => {
+    const f = e.target.files?.[0]; e.target.value = "";
+    if (!f || !sample) return;
+    const st = $("photo-status"), b = $("photo-btn");
+    b.disabled = true; st.textContent = "Looking at your photo…";
+    try {
+      const found = await sample.json('This is a photo of the inside of a fridge (or of groceries). List every food item you can identify. Reply with ONLY a JSON array of {"name": string, "qty": string} objects, where qty is a short estimate like "3", "1 bag" or "" if unsure. Use plain grocery names ("eggs", "baby spinach", "cheddar"). Skip condiment bottles you cannot read.', { images: f, cache: false });
+      const list = (Array.isArray(found) ? found : []).filter((x) => x && x.name).map((x) => ({ name: String(x.name), qty: String(x.qty || "") }));
+      addItems(list);
+      st.textContent = list.length ? `Added ${list.length} item${list.length === 1 ? "" : "s"}. Remove anything that's wrong.` : "Couldn't spot any food in that photo.";
+    } catch (err) {
+      st.textContent = err?.code === "image_rejected" ? "That image couldn't be read. Try a JPEG or PNG." : err?.code === "not_granted" ? "Photo scanning needs permission to use Claude." : "Couldn't read that photo. Try another one, or type items in.";
+      if (PERMANENT.includes(err?.code)) { sample = null; setPill(); $("photo-row").hidden = true; }
+    } finally { b.disabled = false; }
+  });
+
+  function setPill() {
+    $("engine-pill").innerHTML = sample ? "Planner: <b>Claude</b>" : "Planner: built-in recipes";
+  }
+
+  // ---------- boot ----------
+  renderFridge();
+  setPill();
+  renderPlan(localPlan(prefs()), { sampleMode: state.example });
+  if (window.claude?.use) {
+    window.claude.use("sample").then(async (s) => {
+      if (!s) return;
+      sample = s; setPill();
+      const lim = await s.limits().catch(() => null);
+      if (lim?.images) { $("photo-row").hidden = false; $("photo-input").accept = lim.images.mediaTypes.join(","); }
+    }).catch(() => {});
+  }
+})();
+</script>
